@@ -1,3 +1,6 @@
+# that contain the all price pred min max pred (3 ML model)
+# needs a back end becaseu can not receive the followings: population etc (needs a db )
+
 import joblib
 import pandas as pd
 
