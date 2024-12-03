@@ -1,4 +1,4 @@
-# Updated Real Estate Price Prediction Script with city_score integration
+# Updated Real Estate Price Prediction Script with city_score and population integration
 
 import tkinter as tk
 from tkinter import messagebox
@@ -11,21 +11,25 @@ from geo_score import score_address
 # Load the pre-trained model
 rf_model_loaded = joblib.load('random_forest_model_compressed.pkl')
 
-# Load the city score CSV
-city_score_file = "C:\\Users\\ahmty\\Desktop\\HFU\\5 Fünftesemester\\signal processing\\myProject papers\\project\\Real-Estate-Price-and-Price-Interval-Prediction\\csvs\\zip-city_score.xlsx"
-city_scores = pd.read_excel(city_score_file)
+# Load the city score and population CSV
+data_file = "C:\\Users\\ahmty\\Desktop\\HFU\\5 Fünftesemester\\signal processing\\myProject papers\\project\\Real-Estate-Price-and-Price-Interval-Prediction\\csvs\\zip-city_score.xlsx"
+city_data = pd.read_excel(data_file)
 
-# Function to get city_score by zip code
-def get_city_score(zip_code):
+# Function to get city_score and population by zip code
+def get_city_data(zip_code):
     try:
-        city_score = city_scores.loc[city_scores['ZipCode'] == zip_code, 'city_score']
-        if not city_score.empty:
-            return city_score.values[0]  # Extract the first matching city_score
+        # Filter by ZipCode
+        row = city_data.loc[city_data['ZipCode'] == zip_code]
+        if not row.empty:
+            # Extract city_score and population
+            city_score = row['city_score'].values[0]
+            population = row['population'].values[0]
+            return city_score, population
         else:
-            return None
+            return None, None
     except Exception as e:
-        print(f"Error fetching city score: {e}")
-        return None
+        print(f"Error fetching city data: {e}")
+        return None, None
 
 # Function to predict the price based on user input
 def predict_price():
@@ -36,12 +40,12 @@ def predict_price():
         messagebox.showerror("Error", "Please enter both an address and a zip code.")
         return
 
-    # Get the city_score from the CSV
+    # Get city_score and population from the CSV
     try:
         zip_code = int(zip_code)  # Ensure the zip code is an integer
-        city_score = get_city_score(zip_code)
-        if city_score is None:
-            messagebox.showerror("Error", "City score not found for the provided zip code.")
+        city_score, population = get_city_data(zip_code)
+        if city_score is None or population is None:
+            messagebox.showerror("Error", "Data not found for the provided zip code.")
             return
     except ValueError:
         messagebox.showerror("Error", "Invalid zip code format. Please enter a numeric zip code.")
@@ -68,7 +72,7 @@ def predict_price():
         'living_area': [int(living_area_entry.get())],
         'land-size': [int(land_size_entry.get())],
         'city_score_normalized': [city_score],  # Use fetched city_score
-        'population': [int(population_entry.get())],
+        'population': [population],  # Use fetched population
         'geo_spatial': [geo_score],
         'center_distance': [center_score],  # Can be adjusted based on actual distance
         'airport_distance': [airport_score]  # Can be adjusted based on actual distance
@@ -102,13 +106,9 @@ tk.Label(root, text="Land Size (m²):").grid(row=4, column=0, sticky="e")
 land_size_entry = tk.Entry(root, width=50)
 land_size_entry.grid(row=4, column=1)
 
-tk.Label(root, text="Population of the Area:").grid(row=5, column=0, sticky="e")
-population_entry = tk.Entry(root, width=50)
-population_entry.grid(row=5, column=1)
-
 # Predict button
 predict_button = tk.Button(root, text="Predict Price", command=predict_price)
-predict_button.grid(row=6, column=0, columnspan=2)
+predict_button.grid(row=5, column=0, columnspan=2)
 
 # Run the GUI loop
 root.mainloop()
